@@ -1,0 +1,3 @@
+*.pyc
+.vagrant
+celerydemo/__pycache__
