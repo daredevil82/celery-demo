@@ -12,21 +12,18 @@
 # 	* Redis 3.2.x
 
 # Top level shell script values
-
 export DEBIAN_FRONTEND=noninteractive
 
-# set mysql root password without having to use shell
-
-
 # Django Project Variables
-
 PROJECT_NAME="celerydemo"
 APP_NAME="app"
 DJANGO_SETTINGS_PATH="project/$PROJECT_NAME/$PROJECT_NAME/settings.py"
 
+# db user and password
 DB_USER="dev"
 DB_PASS="default123"
 
+# Ensure root db user has password set when bypassing console input install
 echo "Setting MySQL root password"
 debconf-set-selections <<< "mysql-server mysql-server/root_password password $DB_PASS"
 debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DB_PASS"
@@ -57,20 +54,16 @@ apt-get install -y mysql-server-5.6 libmysqlclient-dev rabbitmq-server redis-ser
 
 echo "Configuring MySQL"
 mysql -u root -p$DB_PASS -e "create user '$DB_USER'@'localhost' identified by '$DB_PASS'"
-mysql -u root -p$DB_PASS -e "create database `$PROJECT_NAME`"
-mysql -u root -p$DB_PASS -e "grant all privileges on `$PROJECT_NAME`.* to '$DB_USER'@'localhost'"
+mysql -u root -p$DB_PASS -e "create database $PROJECT_NAME"
+mysql -u root -p$DB_PASS -e "grant all privileges on $PROJECT_NAME.* to '$DB_USER'@'localhost'"
 mysql -u root -p$DB_PASS -e "flush privileges"
 
 echo "Configuring RabbitMQ"
 rabbitmq-plugins enable rabbitmq_management
-echo "Adding RabbitMQ User"
 rabbitmqctl add_user $MQ_USER $MQ_PASS
-echo "Adding VirtualHost"
 rabbitmqctl add_vhost $MQ_VHOST
-echo "Setting User Tag"
 rabbitmqctl set_user_tags $MQ_USER administrator
-echo "Adding User Permissions"
-rabbitmqctl set_permissions -p demo $MQ_USER ".*" ".*" ".*"
+rabbitmqctl set_permissions -p $MQ_VHOST $MQ_USER ".*" ".*" ".*"
 rabbitmqctl delete_user guest
 
 echo "Checking if virtualenv needs to be installed"
@@ -88,6 +81,7 @@ echo "source /usr/local/bin/virtualenvwrapper.sh" >> /home/vagrant/.bashrc
 
 # Install project db schema
 cd "project/$PROJECT_NAME"
+workon $PROJECT_NAME
 ./manage.py makemigrations  --no-input
 ./manage.py migrate --no-input
 

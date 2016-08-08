@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'app'
 ]
 
 MIDDLEWARE = [
@@ -75,8 +76,56 @@ WSGI_APPLICATION = 'celerydemo.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'celerydemo',
+        'USER': 'dev',
+        'PASSWORD': 'default123'
+    }
+}
+
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': 'False',
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, '..', 'app.log'),
+            'formatter': 'verbose'
+        },
+        'celery': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, '..', 'celery.log'),
+            'formatter': 'verbose'
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        }
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'celery': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
+        }
     }
 }
 
@@ -118,3 +167,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Celery configuration
+
+from kombu import Queue
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json', ]
+CELERY_DEFAULT_QUEUE = 'default'
+
+CELERY_QUEUES = (
+	Queue('default', routing_key = 'default.#'),
+	Queue('short', routing_key = 'short.#'),
+	Queue('long', routing_key = 'long.#')                 
+)
+
+CELERY_BROKER = 'amqp://admin:default123@192.168.33.10:5672/demo',
+CELERY_BACKEND = 'redis://127.0.0.1:6379/0'
